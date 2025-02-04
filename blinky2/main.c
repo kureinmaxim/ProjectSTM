@@ -15,15 +15,9 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
 
-extern void vApplicationStackOverflowHook(
-	xTaskHandle *pxTask,
-	signed portCHAR *pcTaskName);
+extern void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName);
 
-void
-vApplicationStackOverflowHook(
-  xTaskHandle *pxTask __attribute((unused)),
-  signed portCHAR *pcTaskName __attribute((unused))
-)
+void vApplicationStackOverflowHook(xTaskHandle *pxTask __attribute((unused)),signed portCHAR *pcTaskName __attribute((unused)))
 {
   for(;;);	// Loop forever here..
 }
@@ -31,8 +25,7 @@ vApplicationStackOverflowHook(
  /*********************************************************************
  * Setup the UART
  *********************************************************************/
-static void
-uart_setup(void) {
+static void uart_setup(void) {
 
 	rcc_periph_clock_enable(RCC_GPIOA);
 	rcc_periph_clock_enable(RCC_USART1);
@@ -54,13 +47,12 @@ uart_setup(void) {
  /*********************************************************************
  * Send and receive one character to the UART
  *********************************************************************/
-static inline void
-uart_putc(char ch) {
+static inline void uart_putc(char ch) {
 	usart_send_blocking(USART1,ch);
 }
 
 static char uart_getc(void) {
-    return usart_recv_blocking(USART1);
+        return usart_recv_blocking(USART1);
 }
 
 /*********************************************************************
@@ -86,12 +78,11 @@ task1(void *args __attribute__((unused))) {
 
 static void
 task2(void *args __attribute((unused))) {
-
-	for (;;)
+    for (;;)
      {
-		gpio_toggle(GPIOC,GPIO15);
-		vTaskDelay(pdMS_TO_TICKS(10));
-	 }
+	gpio_toggle(GPIOC,GPIO15);
+	vTaskDelay(pdMS_TO_TICKS(10));
+     }
 }
 
 static void uart_echo_task(void *args __attribute__((unused))) {

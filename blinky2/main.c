@@ -71,32 +71,18 @@ task1(void *args __attribute__((unused))) {
 	int c = 'A';
 
 	for (;;) {
-		gpio_toggle(GPIOC,GPIO13);
-		vTaskDelay(pdMS_TO_TICKS(1000));
-		uart_putc(c);
+	    gpio_toggle(GPIOC,GPIO13);
+	    vTaskDelay(pdMS_TO_TICKS(1000));
+	    uart_putc(c);
+	   // Get the remaining stack size and output it to UART
+           UBaseType_t stackRemaining = uxTaskGetStackHighWaterMark(NULL);
+           char buffer[50];
+           int len = snprintf(buffer, sizeof(buffer), "Stack remaining: %lu\n", stackRemaining);
+           for (int i = 0; i < len; i++) {
+            uart_putc(buffer[i]);
+           }	
 	}
 }
-
-/*static void
-task1(void *args __attribute((unused))) {
-
-  for (;;)
-   {
- 	 gpio_toggle(GPIOC,GPIO13);
-	 vTaskDelay(pdMS_TO_TICKS(500));
- // Получаем оставшийся запас стека (в словах), Можно вывести в UART или отладчик
-     UBaseType_t stackRemaining = uxTaskGetStackHighWaterMark(NULL);
-
-     if (stackRemaining < 10)
-      {
-        while (1)
-         {
-           gpio_toggle(GPIOC, GPIO13);
-           vTaskDelay(pdMS_TO_TICKS(50));
-         }
-      }
-   }
- }*/
 
 static void
 task2(void *args __attribute((unused))) {

@@ -39,7 +39,9 @@ uart_setup(void) {
 
 	// UART TX on PA9 (GPIO_USART1_TX)
 	gpio_set_mode(GPIOA,GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,GPIO_USART1_TX);
-
+        // UART RX on PA10 (GPIO_USART1_RX)
+        gpio_set_mode(GPIOA, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, GPIO_USART1_RX);
+	
 	usart_set_baudrate(USART1,38400);
 	usart_set_databits(USART1,8);
 	usart_set_stopbits(USART1,USART_STOPBITS_1);
@@ -50,11 +52,15 @@ uart_setup(void) {
 }
 
  /*********************************************************************
- * Send one character to the UART
+ * Send and receive one character to the UART
  *********************************************************************/
 static inline void
 uart_putc(char ch) {
 	usart_send_blocking(USART1,ch);
+}
+
+static char uart_getc(void) {
+    return usart_recv_blocking(USART1);
 }
 
 /*********************************************************************
@@ -102,23 +108,30 @@ task2(void *args __attribute((unused))) {
 	 }
 }
 
-int
-main(void) {
+static void uart_echo_task(void *args __attribute__((unused))) {
+    char ch;
+    for (;;) {
+        ch = uart_getc();
+        uart_putc(ch);
+    }
+}
 
-	rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
+int main(void) {
 
-	rcc_periph_clock_enable(RCC_GPIOC);
-	gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL,GPIO13);
-    gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL,GPIO15);
+  rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
+  rcc_periph_clock_enable(RCC_GPIOC);
+  gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL,GPIO13);
+  gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL,GPIO15);
 
-    uart_setup();
+  uart_setup();
 
-	xTaskCreate(task1,"task1_UART_LED",100,NULL,configMAX_PRIORITIES-1,NULL);
-    xTaskCreate(task2,"task2_IMP",50,NULL,configMAX_PRIORITIES-2,NULL);
-	vTaskStartScheduler();
+  xTaskCreate(task1,"task1_UART_LED",100,NULL,configMAX_PRIORITIES-2,NULL);
+  xTaskCreate(task2,"task2_IMP",50,NULL,configMAX_PRIORITIES-1,NULL);
+  xTaskCreate(uart_echo_task, "uart_echo_task", 100, NULL, configMAX_PRIORITIES-1, NULL);	
+  vTaskStartScheduler();
 
-	for (;;);
-	return 0;
+  for (;;);
+  return 0;
 }
 
 // End

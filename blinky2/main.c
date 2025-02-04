@@ -10,9 +10,10 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
-
+//#include "usart.h"
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/usart.h>
 
 extern void vApplicationStackOverflowHook(
 	xTaskHandle *pxTask,
@@ -27,17 +28,59 @@ vApplicationStackOverflowHook(
   for(;;);	// Loop forever here..
 }
 
+ /*********************************************************************
+ * Setup the UART
+ *********************************************************************/
 static void
+uart_setup(void) {
+
+	rcc_periph_clock_enable(RCC_GPIOA);
+	rcc_periph_clock_enable(RCC_USART1);
+
+	// UART TX on PA9 (GPIO_USART1_TX)
+	gpio_set_mode(GPIOA,GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,GPIO_USART1_TX);
+
+	usart_set_baudrate(USART1,38400);
+	usart_set_databits(USART1,8);
+	usart_set_stopbits(USART1,USART_STOPBITS_1);
+	usart_set_mode(USART1,USART_MODE_TX);
+	usart_set_parity(USART1,USART_PARITY_NONE);
+	usart_set_flow_control(USART1,USART_FLOWCONTROL_NONE);
+	usart_enable(USART1);
+}
+
+ /*********************************************************************
+ * Send one character to the UART
+ *********************************************************************/
+static inline void
+uart_putc(char ch) {
+	usart_send_blocking(USART1,ch);
+}
+
+/*********************************************************************
+ * Send characters to the UART, slowly
+ *********************************************************************/
+static void
+task1(void *args __attribute__((unused))) {
+	int c = 'A';
+
+	for (;;) {
+		gpio_toggle(GPIOC,GPIO13);
+		vTaskDelay(pdMS_TO_TICKS(1000));
+		uart_putc(c);
+	}
+}
+
+/*static void
 task1(void *args __attribute((unused))) {
 
   for (;;)
    {
  	 gpio_toggle(GPIOC,GPIO13);
 	 vTaskDelay(pdMS_TO_TICKS(500));
- // Получаем оставшийся запас стека (в словах)
+ // Получаем оставшийся запас стека (в словах), Можно вывести в UART или отладчик
      UBaseType_t stackRemaining = uxTaskGetStackHighWaterMark(NULL);
- // Можно вывести в UART или отладчик
- // printf("task1: Остаток стека: %lu слов\n", stackRemaining);
+
      if (stackRemaining < 10)
       {
         while (1)
@@ -47,7 +90,7 @@ task1(void *args __attribute((unused))) {
          }
       }
    }
- }
+ }*/
 
 static void
 task2(void *args __attribute((unused))) {
@@ -68,8 +111,10 @@ main(void) {
 	gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL,GPIO13);
     gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ,GPIO_CNF_OUTPUT_PUSHPULL,GPIO15);
 
-	xTaskCreate(task1,"LED",100,NULL,configMAX_PRIORITIES-1,NULL);
-    xTaskCreate(task2,"PinOut",50,NULL,configMAX_PRIORITIES-2,NULL);
+    uart_setup();
+
+	xTaskCreate(task1,"task1_UART_LED",100,NULL,configMAX_PRIORITIES-1,NULL);
+    xTaskCreate(task2,"task2_IMP",50,NULL,configMAX_PRIORITIES-2,NULL);
 	vTaskStartScheduler();
 
 	for (;;);

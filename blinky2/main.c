@@ -80,16 +80,10 @@ static void
 task2(void *args __attribute((unused))) {
     for (;;)
      {
-<<<<<<< HEAD
        //uart_putc('T');  // Check if task2 is running
 	   gpio_toggle(GPIOC,GPIO15);
 	   vTaskDelay(pdMS_TO_TICKS(20));
     }
-=======
-	gpio_toggle(GPIOC,GPIO15);
-	vTaskDelay(pdMS_TO_TICKS(10));
-     }
->>>>>>> 4d45033ce1e382805f4a5a0d95bb7a060972ad2a
 }
 
  static void uart_echo_task(void *args __attribute__((unused))) {
